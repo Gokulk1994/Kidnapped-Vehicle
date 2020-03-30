@@ -20,29 +20,62 @@
 
 using std::string;
 using std::vector;
+using std::normal_distribution;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
-  /**
-   * TODO: Set the number of particles. Initialize all particles to 
-   *   first position (based on estimates of x, y, theta and their uncertainties
-   *   from GPS) and all weights to 1. 
-   * TODO: Add random Gaussian noise to each particle.
-   * NOTE: Consult particle_filter.h for more information about this method 
-   *   (and others in this file).
-   */
-  num_particles = 0;  // TODO: Set the number of particles
+
+  num_particles = 200;  // TODO: Set the number of particles
+  
+  std::default_random_engine gen; // random generator
+  
+  Particle Particle_Obj; 
+  
+  // Normal (Gaussian) distribution for x, Y and theta
+  normal_distribution<double> dist_x(x, std[0]);
+  
+  normal_distribution<double> dist_y(y, std[1]);
+  
+  normal_distribution<double> dist_theta(theta, std[2]);
+  
+  // For each particles Initialize all the member values obtained from GPS and to default
+  for (int i = 0; i < num_particles; ++i) 
+  {
+    Particle_Obj.id    = i;
+    Particle_Obj.x     = dist_x(gen);
+    Particle_Obj.y     = dist_y(gen);
+    Particle_Obj.theta = dist_theta(gen);
+    Particle_Obj.weight= 1.0;
+    
+    particles.push_back(Particle_Obj);
+  }
 
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], 
                                 double velocity, double yaw_rate) {
-  /**
-   * TODO: Add measurements to each particle and add random Gaussian noise.
-   * NOTE: When adding noise you may find std::normal_distribution 
-   *   and std::default_random_engine useful.
-   *  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
-   *  http://www.cplusplus.com/reference/random/default_random_engine/
-   */
+
+  double prediction_x,prediction_y,prediction_theta;
+
+  
+  for(int i = 0 ; i < num_particles; i++)
+  {
+    std::default_random_engine gen;
+    
+    // Predict values from velocity and yawrate
+    prediction_x 	   = particles.at(i).x     + ((velocity / yaw_rate) * (sin(particles.at(i).theta + yaw_rate * delta_t) - sin(particles.at(i).theta)));
+    prediction_y       = particles.at(i).y     + ((velocity / yaw_rate) * (cos(particles.at(i).theta)                      - cos(particles.at(i).theta + yaw_rate * delta_t )));
+    prediction_theta   = particles.at(i).theta + (yaw_rate * delta_t);
+      
+    // Normal distribution from Predicted values
+  	normal_distribution<double> dist_x(prediction_x, std_pos[0]);
+	normal_distribution<double> dist_y(prediction_y, std_pos[1]);
+	normal_distribution<double> dist_theta(prediction_theta, std_pos[2]);
+    
+    particles[i].x = dist_x(gen);
+    particles[i].y = dist_y(gen);
+    particles[i].theta = dist_theta(gen);
+    
+  }
 
 }
 
